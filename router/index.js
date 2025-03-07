@@ -1,0 +1,14 @@
+const Router = require('express').Router
+const wbController = require('../controllers/wb-controller')
+
+
+
+const router = new Router()
+
+// Для валидации запросов
+// const {body} = require('express-validator')
+
+
+router.get('/test', wbController.test)         // тестовая функция для отладки
+
+module.exports = router
