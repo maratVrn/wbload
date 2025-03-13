@@ -74,6 +74,7 @@ class TaskService{
         for (let i in taskData){
 
             if (!taskData[i].tableTaskEnd) try {
+            //  if (i >= 2585) try {
             // if (taskData[i].tableTaskEnd) try {  // Отладка
 
                 console.log(taskData[i].tableName);
@@ -87,7 +88,7 @@ class TaskService{
 
                 saveParserFuncLog('taskService ', '--- Обновляем таблицу  '+taskData[i].tableName+'  кол-во'+updateCount)
 
-                await delay(0.1 * 60 * 1000)
+                await delay(0.03 * 60 * 1000)
             } catch(error) {
                 saveErrorLog('taskService',`Ошибка в updateAllProductList при обновлении таблицы `+taskData[i].tableName)
                 saveErrorLog('taskService', error)
@@ -163,7 +164,7 @@ class TaskService{
                 // } else allTableIsUpdate = false
                 // saveParserFuncLog('taskService ', '--- Обновляем таблицу  '+taskData[i].tableName+'  кол-во'+updateCount)
 
-                await delay(0.1 * 60 * 1000)
+                await delay(0.02 * 60 * 1000)
             } catch(error) {
                 saveErrorLog('taskService',`Ошибка в checkAllProductListData  при обновлении таблицы `+taskData[i].tableName)
                 saveErrorLog('taskService', error)
