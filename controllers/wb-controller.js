@@ -77,17 +77,13 @@ class WbController{
     // }
 
 
-    // async getWBSubjects_fromWB (req, res, next) {
-    //
-    //     try {
-    //         const allWBCatalog  = await wbService.getWBSubjects_fromWB()
-    //         res.json(allWBCatalog)
-    //     } catch (e) {
-    //         console.log(e);
-    //         next(e)
-    //     }
-    //
-    // }
+
+    async deleteZeroID (req, res, next) {
+        try {
+            const result = await ProductListService.deleteZeroID()
+            res.json(result)
+        } catch (e) {   console.log(e);   next(e)}
+    }
 
 
     async test (req, res, next) {

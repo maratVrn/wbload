@@ -3,7 +3,7 @@ const sequelize = require("../db");
 const {DataTypes, Op} = require("sequelize");
 const {saveErrorLog, saveParserFuncLog} = require('../servise/log')
 const {PARSER_GetProductListInfo,PARSER_GetProductListInfoAll_fromIdArray, PARSER_GetIDInfo} = require("../wbdata/wbParserFunctions");
-const {get30DaysSaleInfoFromHistory} = require('../wbdata/wbfunk')
+const {getDataFromHistory} = require('../wbdata/wbfunk')
 const ProductIdService= require('../servise/productId-service')
 
 
@@ -43,102 +43,6 @@ class ProductListService {
     //     { createdAt: false,   updatedAt: false  }  )
 // ********************************* Основной этап парсинга карточек товаров с ВБ **************************************
 
-    // ПАРСИНГ Глобальная задача - первая загрузка всех карточек товара в заданном диапазоне возможных ID из списка таблиц wb_productIdList
-
-    // async loadAllWBProductListInfo_fromIdTable(startTable, endTable){
-    //
-    //     // let productIdListArray = await ProductIdService.getProductIdListArray(startTable, endTable)
-    //
-    //     for (let  i = startTable; i <= endTable; i++){
-    //         const productIdList = await  ProductIdService.getProductIdList(i)
-    //
-    //         console.log('СТАРТ для таблицы tableIdx '+productIdList.tableIdx);
-    //         saveParserFuncLog('productListService', 'Загружаем данные для списка wb_productIdList_'+productIdList.tableIdx+'    --loadAllWBProductListInfo_fromIdTable--')
-    //         // Парсинг - поиск товаров
-    //         const productListInfoAll = await  PARSER_GetProductListInfoAll_fromIdArray(productIdList)
-    //         saveParserFuncLog('productListService', ' ---- Загрузили '+productListInfoAll.length+' товаров---- Обновляем инфрмацию в ИД таблице  ---- ')
-    //         // Обновление инф-ии списка ИД
-    //         const resultProductListInfoAll = await ProductIdService.updateProductIdList(productIdList.tableIdx,productListInfoAll )
-    //         // СОхраняем сами товары в базе данных
-    //         saveParserFuncLog('productListService', ' ---- Сохраняем сами продукты итоговое кол-во '+resultProductListInfoAll.length+' ---- ')
-    //         await this.saveAllNewProductList(resultProductListInfoAll)
-    //         saveParserFuncLog('productListService', ' ---- ЗАВЕРШИЛИ ---- ')
-    //         console.log('Завершили');
-    //         await delay(1000*60*2);
-    //     }
-    //
-    //     console.log('isOk');
-    //     return 'isOk'
-    // }
-
-    // ПАРСИНГ Глобальная задача - Добавляем товары у которых был нулевой или минимальный остаток но потом колл-во увеличилось т.е. селлер
-    // завез товары снова на склад загрузка всех карточек товара в заданном диапазоне возможных ID из списка таблиц wb_productIdList
-    // isAllProduct - если да то поиск по всем продуктам у котрых даже нулевые остатки были, если нет то только там где остатки были но нет каталога ИД
-
-    // async loadNoMinQuantityWBProductListInfo_fromIdTable(startTable, endTable, isAllProduct){
-    //
-    //     let minTotalQuantity = isAllProduct? -1 : process.env.MIN_TOTAL_QUANTITY
-    //
-    //     for (let  i = startTable; i <= endTable; i++){
-    //         const productIdList = await  ProductIdService.getUpdateProductIdList(i,minTotalQuantity)
-    //         console.log('СТАРТ для таблицы tableIdx '+productIdList.tableIdx);
-    //         saveParserFuncLog('productListService', 'Обновляем пропущенные данные для списка wb_productIdList_'+productIdList.tableIdx+'    --updateAllWBProductListInfo_fromIdTable--')
-    //         // Парсинг - поиск товаров
-    //         const productListInfoAll = await  PARSER_GetProductListInfoAll_fromIdArray(productIdList)
-    //         saveParserFuncLog('productListService', ' ---- Загрузили '+productListInfoAll.length+' товаров---- Обновляем инфрмацию в ИД таблице  ---- ')
-    //         // Обновление инф-ии списка ИД
-    //
-    //         const resultProductListInfoAll = await ProductIdService.updateProductIdList(productIdList.tableIdx,productListInfoAll )
-    //
-    //
-    //         // // СОхраняем сами товары в базе данных
-    //         saveParserFuncLog('productListService', ' ---- Сохраняем сами продукты итоговое кол-во '+resultProductListInfoAll.length+' ---- ')
-    //         await this.saveAllNewProductList(resultProductListInfoAll)
-    //         saveParserFuncLog('productListService', ' ---- ЗАВЕРШИЛИ ---- ')
-    //         console.log('Завершили');
-    //         await delay(1000*60*0.2);
-    //     }
-    //
-    //     console.log('isOk');
-    //     return 'isOk'
-    // }
-
-    // ПАРСИНГ Глобальная задача - Поиск новых товаров - тех ID по которым ранее информация не была в базе данных isNull === TRUE !!
-    // загрузка всех карточек товара в заданном диапазоне возможных ID из списка таблиц wb_productIdList
-
-    // async loadNewWBProductListInfo_fromIdTable(startTable, endTable){
-    //
-    //
-    //
-    //     for (let  i = startTable; i <= endTable; i++){
-    //         saveParserFuncLog('newIdProduct', 'Новые ИД в таблице ' + i)
-    //
-    //         const productIdList = await  ProductIdService.getNewProductIdList(i)
-    //
-    //         // console.log('СТАРТ для таблицы tableIdx '+productIdList.tableIdx);
-    //         saveParserFuncLog('productListService', 'Обновляем ISNULL данные для списка wb_productIdList_'+productIdList.tableIdx+'    --loadNewWBProductListInfo_fromIdTable--')
-    //         // // Парсинг - поиск товаров
-    //         const productListInfoAll = await  PARSER_GetProductListInfoAll_fromIdArray(productIdList)
-    //
-    //         saveParserFuncLog('productListService', ' ---- Загрузили '+productListInfoAll.length+' товаров---- Обновляем инфрмацию в ИД таблице  ---- ')
-    //         // Обновление инф-ии списка ИД
-    //
-    //         const resultProductListInfoAll = await ProductIdService.updateProductIdList(productIdList.tableIdx,productListInfoAll )
-    //
-    //
-    //         // СОхраняем сами товары в базе данных
-    //         saveParserFuncLog('productListService', ' ---- Сохраняем сами продукты итоговое кол-во '+resultProductListInfoAll.length+' ---- ')
-    //
-    //         await this.saveAllNewProductList(resultProductListInfoAll)
-    //         saveParserFuncLog('productListService', ' ---- ЗАВЕРШИЛИ ---- ')
-    //         console.log('Завершили');
-    //         await delay(1000*60*0.2);
-    //     }
-    //
-    //     console.log('isOk');
-    //     return 'isOk'
-    // }
-
 
 
     // ПАРСННГ Глобальная задача - обновляем информацию в выюранноной таблице и там же сохраняем
@@ -146,6 +50,7 @@ class ProductListService {
     async updateAllWBProductListInfo_fromTable2(productList_tableName){
         let updateResult = 'Старт обновления'
         let updateCount = 0
+        let deleteCount = 0
         // saveParserFuncLog('updateServiceInfo ', 'Обновляем информацию для таблицы '+productList_tableName)
         try {
 
@@ -163,7 +68,8 @@ class ProductListService {
 
                     const currProductList = await this.WBCatalogProductList.findAll({ offset: i, limit: step, order: [['id'] ] }) // поиграть с attributes: ['id', 'logo_version', 'logo_content_type', 'name', 'updated_at']
                     console.log(currProductList.length+'  '+currProductList[0].id+'  '+currProductList[currProductList.length-1].id);
-                    let saveArray = []
+                    let saveArray = []          // массив с обновленными данными
+                    let deleteIdArray = []      // массив с удаленными товарами
 
 
                     const step2 = 500
@@ -182,22 +88,13 @@ class ProductListService {
                             console.log('j = ' + j + '  --  Запросили = ' + productList.length);
 
                             const updateProductListInfo = await PARSER_GetProductListInfo(productList)
-                            const [saveResult,newSaveArray] = await this.update_AllProductList(currProductList,updateProductListInfo, j, end_j )
+                            const [saveResult,newSaveArray, newDeleteIdArray] = await this.update_AllProductList(currProductList,updateProductListInfo, j, end_j )
 
                             updateCount += updateProductListInfo.length
                             if (saveResult) saveArray = [...saveArray,...newSaveArray]
-                            console.log(saveArray.length);
-
+                            deleteIdArray = [...deleteIdArray, ...newDeleteIdArray]
 
                             j += step2 - 1
-                            // try {
-                            //     await this.WBCatalogProductList.bulkCreate(saveArray,{    updateOnDuplicate: ["maxPrice","price","reviewRating","discount","totalQuantity","saleCount","saleMoney","priceHistory"]  })
-                            // } catch (e) {
-                            //     console.log(e);
-                            //     console.log(saveArray);
-                            //     break
-                            // }
-
 
                         } catch (error) {
                             console.log(error);
@@ -211,8 +108,14 @@ class ProductListService {
                     if (saveArray.length === 0)
                         saveParserFuncLog('updateServiceInfo ', 'Нулевая таблица '+productList_tableName.toString())
 
+                    console.log('Всего нужно обновить ' + saveArray.length);
+                    console.log('нужно удалить ' + deleteIdArray.length);
+                    deleteCount = deleteIdArray.length
+                    await this.WBCatalogProductList.bulkCreate(saveArray,{    updateOnDuplicate: ["maxPrice","price","reviewRating","discount","totalQuantity","saleCount","saleMoney","priceHistory"]  })
+                    // Удаляем нерабочие ИД-ки
+                    await this.WBCatalogProductList.destroy({where: {id: deleteIdArray}})
+                    await ProductIdService.checkIdInCatalogID_andDestroy(deleteIdArray, parseInt(productList_tableName.replace('productList','')))
 
-                     await this.WBCatalogProductList.bulkCreate(saveArray,{    updateOnDuplicate: ["maxPrice","price","reviewRating","discount","totalQuantity","saleCount","saleMoney","priceHistory"]  })
 
                 }
 
@@ -228,7 +131,7 @@ class ProductListService {
         }
 
         console.log('updateAllWBProductListInfo_fromTable isOk');
-        return [updateResult, updateCount]
+        return [updateResult, updateCount, deleteCount]
     }
 
 
@@ -377,7 +280,9 @@ class ProductListService {
     //НУЖНА!!!
     async update_AllProductList (allProductList,updateProductListInfo, startI, endI){
         let saveResult = false
+        let newDeleteIdArray = []
         let saveArray = []
+        if (updateProductListInfo.length>0)
         try {
             // Сначала создадим Обновленный массив с данными
 
@@ -400,7 +305,7 @@ class ProductListService {
                     }
 
 
-
+                    let inUpdateData = false
                     for (let j in updateProductListInfo)
                         if (oneProduct.id === updateProductListInfo[j].id) {
 
@@ -436,14 +341,17 @@ class ProductListService {
                                 oneProduct.reviewRating = updateProductListInfo[j]?.reviewRating ? updateProductListInfo[j]?.reviewRating : 0
                                 oneProduct.kindId = updateProductListInfo[j]?.kindId ? updateProductListInfo[j]?.kindId : 0
 
-                                const saleInfo = get30DaysSaleInfoFromHistory(oneProduct.priceHistory,
-                                    oneProduct.price, oneProduct.totalQuantity)
+                                let isFbo =  oneProduct.dtype === 4
+                                const saleInfo = getDataFromHistory(oneProduct.priceHistory,
+                                    updateProductListInfo[j].price, updateProductListInfo[j].totalQuantity, 30,isFbo, false )
 
                                 oneProduct.saleMoney = saleInfo.totalMoney
+                                oneProduct.discount = saleInfo.discount
                                 // TODO: тут обнаружены аномалии - обьем продаж может быть очень большим что говорит о левых записях в бд
                                 // пока просто сохраним данные об этом ID и поставим saleMoney в опр число
-                                if (oneProduct.saleMoney > 2111111111){
-                                    oneProduct.saleMoney = 2111111111
+                                if (oneProduct.saleMoney > 1_111_111_111){
+                                    oneProduct.saleMoney = 0
+                                    oneProduct.saleCount = 0
                                     saveParserFuncLog('unomalId ', 'Аномальные данные в ID '+oneProduct.id)
                                 }
 
@@ -454,21 +362,22 @@ class ProductListService {
                                 if (updateProductListInfo[j]?.totalQuantity > 0) {
                                     if (updateProductListInfo[j]?.price > 0) {
                                         oneProduct.price = updateProductListInfo[j].price
-                                        if (oneProduct.maxPrice > updateProductListInfo[j]?.price) {
-
-                                            oneProduct.discount = Math.round(1000 * ((oneProduct.maxPrice - oneProduct.price) / oneProduct.maxPrice)) / 10
-                                        } else {
+                                        if (oneProduct.maxPrice < updateProductListInfo[j]?.price)
                                             oneProduct.maxPrice = updateProductListInfo[j]?.price
-                                            oneProduct.discount = 0
-                                        }
                                     }
                                 }
 
                             }  catch (error) {}
-
+                            inUpdateData = true
                             saveArray.push(oneProduct)
 
                         }
+
+                    if (!inUpdateData) {
+                        // saveErrorLog('noUpdateListID', oneProduct.id.toString())
+                        newDeleteIdArray.push(oneProduct.id)
+                    }
+
                 } catch (error) {
                     console.log(error);
                 }
@@ -480,7 +389,7 @@ class ProductListService {
             saveErrorLog('productListService', error)
             console.log(error)
         }
-        return  [saveResult,saveArray]
+        return  [saveResult,saveArray, newDeleteIdArray]
     }
 
     // Проверяем наличие таблицы в базе данных по catalogId и создаем/обновляем параметры таблицы
@@ -614,16 +523,13 @@ class ProductListService {
 
                         this.WBCatalogProductList.tableName = tableName.toString()
                         const count = await this.WBCatalogProductList.count()
-
-
-                        const minQuantityProduct = await this.WBCatalogProductList.findAll({where: { totalQuantity  : { [Op.lte]: process.env.MIN_TOTAL_QUANTITY } }})
                         console.log(i);
-                        minQuantityCount += minQuantityProduct.length
+
                         allCount += count
-                        saveParserFuncLog('listServiceInfo ', 'Таблица '+tableName.toString()+' кол-во записей '+count + ' , с мин остатком '+ minQuantityProduct.length)
+                        saveParserFuncLog('listServiceInfo ', 'Таблица '+tableName.toString()+' кол-во записей '+count )
                     }
                 }
-            saveParserFuncLog('listServiceInfo ', 'Общее кол-во таблиц '+allTablesName.length+' Общее кол-во записей '+allCount+ ' , с мин остатком '+ minQuantityCount)
+            saveParserFuncLog('listServiceInfo ', 'Общее кол-во таблиц '+allTablesName.length+' Общее кол-во записей '+allCount)
 
         } catch (error) {
             saveErrorLog('productListService',`Ошибка в getAllProductListInfo `)
@@ -827,115 +733,6 @@ class ProductListService {
         return result
     }
 
-    // Проверяет правильно ли мы установили catalogId - т.к. изначально товары добавлялись по subjectID этот метод оказался неверным тк subjectID может быть одинаковым для многих catalogId
-    // Если товар попал в неправильную таблицу то удаляем его из текущей и переносим в "правильную" таблицу
-
-    // async checkCatalogID_InIdArray(idArray, catalogId){
-    //     const isTable = await this.checkTableName(catalogId)
-    //     let result = [] // Сюда сложим все ИД ки которые отличаются
-    //     if (isTable) try {
-    //         const data = await this.WBCatalogProductList.findAll({ where: { id: { [Op.in]: idArray } }, order: [['id'] ] })
-    //
-    //         console.log('data.length = '+data.length);
-    //
-    //         const step2 = 500
-    //
-    //         for (let j = 0; j < data.length; j ++)
-    //             try {
-    //                 let end_j = j + step2 -1 < data.length ? j + step2 -1 : data.length-1
-    //                 let productList = []
-    //                 for (let k = j; k <=end_j; k++)
-    //                     productList.push(data[k].id)
-    //                 //
-    //                 console.log('j = ' + j + '  --  Запросили = ' + productList.length);
-    //
-    //                 const updateProductListInfo = await PARSER_GetProductListInfo(productList)
-    //                 // const [saveResult,newSaveArray] = await this.update_and_saveAllProductList2(currProductList,updateProductListInfo, j, end_j )
-    //                 // updateCount += updateProductListInfo.length
-    //                 // if (saveResult) saveArray = [...saveArray,...newSaveArray]
-    //                 // console.log(saveArray.length);
-    //                 j += step2-1
-    //             } catch(error) {
-    //                 console.log(error);}
-    //
-    //
-    //         for (let j in data){
-    //             console.log(data[j].id);
-    //             PARSER_GetIDInfo(data[j].id)
-    //             break
-    //             //
-    //
-    //         }
-    //
-    //
-    //
-    //     }
-    //
-    //     catch (error) {
-    //         saveErrorLog('productListService',`Ошибка в checkIdArray tableId `+catalogId)
-    //         saveErrorLog('productListService', error)
-    //         console.log(error);
-    //     }
-    //
-    //     return result
-    // }
-
-    // Проверяет наличие всех ИД из ProductId Table в таблицах ProductIdList и если каких то ИД нет то состыковыае данные с ProductIdService.clearIdList
-
-    // async controlDataInProductIdList( nameIdx){
-    //
-    //     let resultCount = -1
-    //     try {
-    //         saveParserFuncLog('controlDataInProductIdList ', ' Проверяем данные в ИД лист wb_productIDList_ ' + nameIdx )
-    //         const allIdList = await ProductIdService.getIdWithCatalogID(nameIdx)
-    //         console.log('Всего ИД '+ allIdList.length);
-    //         saveParserFuncLog('controlDataInProductIdList ', 'Всего ИД '+ allIdList.length)
-    //
-    //
-    //         // Сначала создадим ассоциативный массив ключ - catalogId значение - массив всех allIdList с заданным catalogId
-    //         const controlIdList = new Map()
-    //
-    //         for (let i in allIdList) {
-    //             if (allIdList[i].catalogId) {
-    //
-    //                 if (controlIdList.has(allIdList[i].catalogId)) {
-    //
-    //                     const crArray = controlIdList.get(allIdList[i].catalogId)
-    //                     controlIdList.set(allIdList[i].catalogId, [...crArray, allIdList[i].id])
-    //
-    //                 } else controlIdList.set(allIdList[i].catalogId, [allIdList[i].id])
-    //             }
-    //         }
-    //         // Далее пройдемся по новому массиву и проверим наличии ИД ков в базе
-    //         // TODO:... let idNoCheck = []
-    //
-    //         for (let key of controlIdList.keys()) {
-    //             const controlIdArray = controlIdList.get(key)
-    //             console.log('key = '+key+'  idCount = '+controlIdArray.length);
-    //             // TODO: тут используем нужную функцию для проверки
-    //
-    //             // Эта функция проверяет есть ли реально по даннму списку ид-ки в этой таблице
-    //             // TODO:... const checkIdArray = await this.checkIdArray(controlIdArray, key)
-    //             // TODO:... idNoCheck = [...idNoCheck, ...checkIdArray]
-    //
-    //             const checkIdArray = await this.checkCatalogID_InIdArray(controlIdArray, key)
-    //             // TODO: отладка брик
-    //             break
-    //
-    //         }
-    //
-    //         // TODO:... saveParserFuncLog('controlDataInProductIdList ', 'не используемые ИД '+ idNoCheck.length)
-    //         // TODO:...resultCount = idNoCheck.length
-    //         // TODO:... await ProductIdService.clearIdList(idNoCheck, nameIdx)
-    //         // TODO:... saveParserFuncLog('controlDataInProductIdList ', 'Удалили из таблицы ')
-    //     }      catch (error) {
-    //         saveErrorLog('productListService',`Ошибка в controlDataInProductIdList nameIdx `+nameIdx)
-    //         saveErrorLog('productListService', error)
-    //         console.log(error);
-    //     }
-    //
-    //     return resultCount
-    // }
 
     // Тестовая функция
     async test (){
@@ -950,6 +747,43 @@ class ProductListService {
         console.log('isOk');
         return testResult
     }
+
+    // удаляем товары которых больше нет на вб по ним saleCount равно null
+    // НУЖНА
+    async deleteZeroID() {
+        let allIdToDeleteCount = 0
+        const allTablesName = await sequelize.getQueryInterface().showAllTables()
+        if (allTablesName)
+            for (let i = 0; i < allTablesName.length; i ++)
+            {
+                try {
+                    const tableName = allTablesName[i]
+                    if (tableName.toString().includes('productList') && !tableName.toString().includes('all')) {
+
+                        this.WBCatalogProductList.tableName = tableName
+                        console.log(i + '  ' + tableName);
+
+                        const data = await this.WBCatalogProductList.findAll({where: {saleCount: null}})
+                        if (data.length > 0) {
+                            allIdToDeleteCount += data.length
+                            const IdList = []
+                            for (let j in data) IdList.push(data[j].id)
+
+                            console.log('    ------------Удаляем   ' + data.length);
+                            await ProductIdService.deleteZeroID(IdList)
+                            await this.WBCatalogProductList.destroy({where: {id: IdList}})
+                        }
+                    }
+                    // if (i > 5) break
+                } catch (e) {   console.log(e);  }
+            }
+        return allIdToDeleteCount
+    }
+
+
+
+
+
 
 }
 

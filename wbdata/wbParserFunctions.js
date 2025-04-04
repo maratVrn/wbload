@@ -385,6 +385,20 @@ async function PARSER_GetProductListInfo(productIdList) {
                                 }
                             }
 
+                            // Определим dtype
+                            let dtype = -1
+                            // TODO: Потом это убрать!! это надо сделать один раз при загрузке нового товара и забить и брать из описания
+                            for (let k in resData.sizes) {
+                                let isDType = false
+                                if (resData.sizes[k]?.dtype) dtype = resData.sizes[k].dtype
+                                if (resData.sizes[k]?.stocks)
+                                    for (let l in resData.sizes[k]?.stocks) {
+                                        if (resData.sizes[k]?.stocks[l]?.dtype) dtype = resData.sizes[k]?.stocks[l]?.dtype
+                                        if (dtype === 1) {isDType = true; break}
+                                    }
+                                if (isDType) break
+                            }
+
                             const priceHistory_tmp = []
                             priceHistory_tmp.push({d: dt, sp: price, q:totalQuantity})
 
@@ -401,7 +415,7 @@ async function PARSER_GetProductListInfo(productIdList) {
                                 saleMoney       : 0,
                                 totalQuantity   : totalQuantity,
                                 priceHistory    : priceHistory_tmp,
-
+                                dtype           : dtype,
                             }
 
                             productListInfo.push(newProduct)

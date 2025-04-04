@@ -27,6 +27,8 @@ class TaskService{
     async updateAllProductList (){
         const taskName = 'updateAllProductList'
         let needTask = {}
+        let allUpdateCount = 0
+        let allDeletedCount = 0
 
         // Сначала разберемся с задачей - продолжать ли старую или создать новую
         saveParserFuncLog('taskService ', '  ----------  Запускаем задачу updateAllProductList -------')
@@ -79,16 +81,18 @@ class TaskService{
 
                 console.log(taskData[i].tableName);
 
-                const [updateResult,updateCount]  = await ProductListService.updateAllWBProductListInfo_fromTable2(taskData[i].tableName)
+                const [updateResult,updateCount, deleteCount]  = await ProductListService.updateAllWBProductListInfo_fromTable2(taskData[i].tableName)
 
 
                 taskData[i].tableTaskEnd = true
                 taskData[i].tableTaskResult = updateResult
                 await this.AllTask.update({taskData: taskData,}, {where: {id: needTask.id,},})
 
-                saveParserFuncLog('taskService ', '--- Обновляем таблицу  '+taskData[i].tableName+'  кол-во'+updateCount)
+                saveParserFuncLog('taskService ', '--- Обновляем таблицу  '+taskData[i].tableName+'  кол-во  '+updateCount+' удалили '+deleteCount)
+                allUpdateCount += updateCount
+                allDeletedCount += deleteCount
 
-                await delay(0.03 * 60 * 1000)
+                await delay(0.02 * 60 * 1000)
             } catch(error) {
                 saveErrorLog('taskService',`Ошибка в updateAllProductList при обновлении таблицы `+taskData[i].tableName)
                 saveErrorLog('taskService', error)
@@ -99,6 +103,9 @@ class TaskService{
 
         console.log('updateAllProductList isOk');
         saveParserFuncLog('taskService ', ' ********  ЗАВЕРШЕНО **************')
+
+        saveParserFuncLog('taskService ', ' ВСЕГО обновили '+allUpdateCount+ ' удалили '+allDeletedCount)
+
     }
 
     // НУЖНА !!! Сворчиваем данные тк есть много дублирующих записей
