@@ -93,7 +93,7 @@ class WbController{
              const testResult  = await TaskService.updateAllProductList()
             // const testResult  = await TaskService.checkAllProductListData()
             // const testResult  = await ProductListService.deleteAllProductListTable()
-            // const testResult  = await ProductListService.updateAllWBProductListInfo_fromTable2('productList9683')
+            // const testResult  = await ProductListService.updateAllWBProductListInfo_fromTable2('productList128566')
             // const testResult  = await ProductListService.test()
             // const testResult  = await ProductListService.getAllProductListInfo()
 

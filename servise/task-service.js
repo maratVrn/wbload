@@ -92,7 +92,7 @@ class TaskService{
                 allUpdateCount += updateCount
                 allDeletedCount += deleteCount
 
-                await delay(0.02 * 60 * 1000)
+                await delay(0.015 * 60 * 1000)
             } catch(error) {
                 saveErrorLog('taskService',`Ошибка в updateAllProductList при обновлении таблицы `+taskData[i].tableName)
                 saveErrorLog('taskService', error)

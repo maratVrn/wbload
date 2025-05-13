@@ -222,10 +222,10 @@ function getDataFromHistory (history, endPrice, totalQuantity, daysCount = 30, i
     // let startQuantity = 0                           // Остатки на начало анализа
     let addSQ = 0                                   // Сколько пришло на склад если это поступление
     let crDate = new Date()
+    let realDayCounter = -1
+    let isBigQuantity = false
 
     if (history?.length >0) {
-
-
         let arIdx = -1
         let isError = false
         let sp = 0
@@ -251,6 +251,7 @@ function getDataFromHistory (history, endPrice, totalQuantity, daysCount = 30, i
                     sq = 0
                     q = 0
                     sp = 0
+                    if (realDayCounter<0) realDayCounter = counter
                 }
 
                 if (Math.abs(arIdx) <=  history.length){
@@ -261,6 +262,7 @@ function getDataFromHistory (history, endPrice, totalQuantity, daysCount = 30, i
                     if (crDate.toLocaleDateString() === d_tmp){
                         sq = history.at(arIdx).q - q
                         q = history.at(arIdx).q
+                        if (q>39000) isBigQuantity = true
                         // Если отрицательное кол-во продаж то возможно это поступление! выясним это
                         if (sq < 0){
                             const absSQ = -1*sq
@@ -308,111 +310,85 @@ function getDataFromHistory (history, endPrice, totalQuantity, daysCount = 30, i
     addQuantityArray = addQuantityArray.reverse()
     returnArray = returnArray.reverse()
 
-    // Тут идет очень умный расчет как вычислить аномалии и удалить их
-    if (!isFbo) try {
-        let realDay = daysCount
-        for (let i in salePriceArray){
-            if (salePriceArray[i]){
-                realDay = daysCount - i
-                break
-            }
-        }
 
-        // проверять имеет смысл если в истории более 25 дней
-        if (realDay>16) {
-            // Сначала соберем текущий массив с продажами
-            let saleData = []
+// КРУТОЙ АЛГОРИТМ ОПРЕДЕЛЕНИЯ ЛЕВЫХ ПРОДАЖ
+
+
+    if (realDayCounter < 0) realDayCounter = saleArray.length
+    // Вычисления делаем только если не было больших аномальных остатков, если аномальные остатки обнуляем продажи
+    if ((isBigQuantity) || (realDayCounter<5)){
+        for (let i in saleArray) saleArray[i] = 0
+    }
+    else
+    {
+        let saleData = []
+        try {
             for (let i in saleArray)
-                if (i > 0) {
-                    const oneData = {
-                        i: i,
-                        q: saleArray[i],
-                        meanQ: 0,
-                        maratKrut: 0
-                    }
-                    saleData.push(oneData)
-                }
+                if (i > 0) saleData.push({i: i, q: saleArray[i], meanQ: 0,})
             // отсортируем по возрастанию колличества
             saleData.sort(function (a, b) {
                 return a.q - b.q;
             });
+            let addQCount = 0
+            for (let i in addQuantityArray) if (addQuantityArray[i] > 0) addQCount++
+            let returnCount = 0
+            for (let i in returnArray)  if (returnArray[i] > 0) returnCount++
 
-            // рассчитаем среднием продажи по возрастанию
-            let sum = 0
+            let z = saleData.length - Math.round((realDayCounter-addQCount-returnCount) / 2)
+
+            let meanQ = saleData[z].q > 0 ? saleData[z].q : 1
             for (let i in saleData) {
-                sum += saleData[i].q
-                saleData[i].meanQ =  sum / (i + 1)
+                saleData[i].meanQ = Math.round(10000 * (saleData[i].q - meanQ) / meanQ) / 100
+                if (saleData[i].meanQ > 399) saleArray[saleData[i].i] = 0
             }
+        } catch (e) { console.log(e);}
+        // console.log(saleData);
 
-            // Возмем среднеее среднее (тафтология знаю ну в общем посередине массива будет реальное среднее)
-            let z = Math.round(saleData.length / 2)
-            let baseMeanQ = 0
-            for (let i = z ; i < saleData.length-5; i ++)
-                if (saleData[i].meanQ>0) {baseMeanQ = saleData[i].meanQ
-                    break
+        // Добавим продажи в тот день когда были поступления
+        // Сначала вычислим средние продажи БЕЗ поступлений
+        try {
+            let tsq = 0
+            let qCount = 0
+            for (let i in saleArray) {
+                if (saleArray[i] >= 0) {
+                    let q = saleArray[i]
+                    if (returnArray[i]) q -= returnArray[i]
+                    tsq += q
+                    qCount++
+
                 }
-            if (baseMeanQ === 0) baseMeanQ = 0.001
-
-            // Далее посмотрим отклонения у 5-ти последних элементов тк теортически не более 5-ти выстрелов может быть
-            let k = 0
-            for (let i = saleData.length - 1; i >= 0; i--) {
-
-                k++
-                // И вот тут самое интересное - если продажи более чем в 10 раз больше чем наще реальное среднее это явный выстрел
-                saleData[i].maratKrut = saleData[i].meanQ / baseMeanQ
-                //обнулим продажу
-                if (saleData[i].maratKrut > 3.2) if (saleArray[saleData[i].i] > 9) saleArray[saleData[i].i] = 0//Math.round(baseMeanQ - 0.01)
-                if (k === 5) break
             }
-            // console.log(saleData);
-        }
+            if (qCount > 0) tsq = Math.round(tsq / qCount)
+            let onePercent = tsq / 100
+            tsq = Math.round(tsq * 0.8)
+            // Далее добавим продажи (и увеличим сами поступления в эти дни)
+            qCount = 0
+            for (let i in addQuantityArray) {
+                if (addQuantityArray[i] > 0) {
+                    let i_q = parseInt(i) + 1
+                    if (i_q < saleArray.length) {
+                        let a = Math.round(tsq + onePercent * qCount);
+                        saleArray[i_q] = a
+                        addQuantityArray[i] += a
+                        qCount++
+                    }
+                }
+            }
 
-    } catch (e) { console.log(e);}
+        } catch (e) { console.log(e);}
 
-    // Добавим продажи в тот день когда были поступления
-    // Сначала вычислим средние продажи БЕЗ поступлений
-    try {
-        let tsq = 0
-
-        let qCount = 0
+        // Расчитаем обьемы продаж
         for (let i in saleArray) {
-            if (saleArray[i] > 0) {
+            if (saleArray[i] >= 0) {
                 let q = saleArray[i]
                 if (returnArray[i]) q -= returnArray[i]
-                tsq += q
-                qCount++
-
-            }
-        }
-        if (qCount > 0) tsq = Math.round(tsq / qCount)
-        let onePercent = tsq / 100
-        tsq = Math.round(tsq * 0.8)
-        // Далее добавим продажи (и увеличим сами поступления в эти дни)
-        qCount = 0
-        for (let i in addQuantityArray) {
-            if (addQuantityArray[i] > 0) {
-                let i_q = parseInt(i) + 1
-                if (i_q < saleArray.length) {
-                    let a = Math.round(tsq + onePercent * qCount);
-                    saleArray[i_q] = a
-                    addQuantityArray[i] += a
-                    qCount++
-                }
+                totalSaleQuantity += q
+                if (salePriceArray[i]) totalMoney += q * salePriceArray[i]
             }
         }
 
-    } catch (e) { console.log(e);}
-
-    // Расчитаем обьемы продаж
-    for (let i in saleArray){
-        if (saleArray[i] >= 0) {
-            let q = saleArray[i]
-            if (returnArray[i]) q-= returnArray[i]
-            totalSaleQuantity += q
-            if (salePriceArray[i]) totalMoney+=q*salePriceArray[i]
-
-        }
     }
+
     if (totalSaleQuantity <= 0) {
         totalSaleQuantity = 0
         totalMoney = 0
