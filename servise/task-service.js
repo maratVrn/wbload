@@ -76,7 +76,7 @@ class TaskService{
         for (let i in taskData){
 
             if (!taskData[i].tableTaskEnd) try {
-            //  if (i >= 2585) try {
+            //  if (i >= 2585) try {   
             // if (taskData[i].tableTaskEnd) try {  // Отладка
 
                 console.log(taskData[i].tableName);
