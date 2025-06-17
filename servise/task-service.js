@@ -76,7 +76,7 @@ class TaskService{
         for (let i in taskData){
 
             if (!taskData[i].tableTaskEnd) try {
-            //  if (i >= 2585) try {   
+             // if (i >= 2050) try {
             // if (taskData[i].tableTaskEnd) try {  // Отладка
 
                 console.log(taskData[i].tableName);
@@ -84,7 +84,7 @@ class TaskService{
                 const [updateResult,updateCount, deleteCount]  = await ProductListService.updateAllWBProductListInfo_fromTable2(taskData[i].tableName)
 
 
-                taskData[i].tableTaskEnd = true
+                taskData[i].tableTaskEnd = updateCount >0 ? true : false
                 taskData[i].tableTaskResult = updateResult
                 await this.AllTask.update({taskData: taskData,}, {where: {id: needTask.id,},})
 

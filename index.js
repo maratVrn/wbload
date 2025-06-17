@@ -19,12 +19,12 @@ const app = express()
 // Автозапуск обновления каждый новый день
 cron.schedule("0 5 0 * * *", function() {
    TaskService.updateAllProductList().then()
-});
+}); 
 
 app.use(express.json({limit: '10mb'}));
 app.use(cookieParser());
 app.use(cors({
-    credentials: true,
+    credentials: true, 
     origin:process.env.CLIENT_URL
     // optionsSuccessStatus: 200,
 }));

@@ -459,10 +459,23 @@ async function PARSER_GetProductListInfo(productIdList) {
                 needGetData = true
             }
 
+            if ((err.code === 'ETIMEDOUT') || (err.code === 'ENOTFOUND')) {
+                saveErrorLog('PARSER_GetProductListInfo', 'Нет Итернета '+err.code)
+                await delay(60_000*5);
+                needGetData = true
+            }
+
             if ((err.status === 429) || (err.response?.status === 429)) {
                 saveErrorLog('PARSER_GetProductListInfo', 'Частое подключение к серверу')
                 await delay(50);
                 needGetData = true
+            }
+
+            if (needGetData === false){
+                saveErrorLog('PARSER_GetProductListInfo', 'Неизвестная ошибка '+err.code+'  делаем задержку 1 минут')
+                await delay(60_000);
+                needGetData = true
+
             }
 
         }
