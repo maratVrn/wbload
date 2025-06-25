@@ -1,7 +1,8 @@
 
 const TaskService = require('../servise/task-service')
 const ProductListService= require('../servise/productList-service')
-
+const ProductIdService= require('../servise/productId-service')
+const {getDataFromHistory} = require('../wbdata/wbfunk')
 const {saveErrorLog} = require("../servise/log");
 class WbController{
 
@@ -86,6 +87,39 @@ class WbController{
     }
 
 
+
+
+    async getMathData (req, res, next) {
+
+        try {
+            const id = req.params.link
+
+            let result = []
+            const idInfo = await ProductIdService.getIdInfo(id)
+            let productInfo = []
+            if (idInfo) {
+                productInfo = await ProductListService.getProductInfo(idInfo)
+                result.push(idInfo)
+                result.push(productInfo)
+                // const res2 =  getDataFromHistory(productInfo.priceHistory, productInfo.price, productInfo.totalQuantity, 30)
+                // result.push(res2)
+            }
+
+
+            //
+            //
+            //
+            //
+            //
+            // // const testResult  = 'isOk'
+            // console.log('testResult = '+testResult);
+            res.json(result)
+        } catch (e) {
+            console.log(e);
+            next(e)
+        }
+
+    }
     async test (req, res, next) {
 
         try {
@@ -93,7 +127,7 @@ class WbController{
              const testResult  = await TaskService.updateAllProductList()
             // const testResult  = await TaskService.checkAllProductListData()
             // const testResult  = await ProductListService.deleteAllProductListTable()
-            // const testResult  = await ProductListService.updateAllWBProductListInfo_fromTable2('productList128566')
+            // const testResult  = await ProductListService.updateAllWBProductListInfo_fromTable2('productList131533')
             // const testResult  = await ProductListService.test()
             // const testResult  = await ProductListService.getAllProductListInfo()
 

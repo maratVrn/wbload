@@ -65,6 +65,26 @@ class ProductIdService {
         return 'isOk'
     }
 
+
+    // Получаем информацию по выбранному ИД в базе данных
+    async getIdInfo (id){
+        let result = []
+        let idInt = parseInt(id)
+        if (idInt>0) {
+            this.WBProductIdTable.tableName ='wb_productIdListAll'
+            await this.WBProductIdTable.sync({ alter: true })
+            // result = await this.WBProductIdTable.findOne({where:  { id  : { [Op.gte]: id }}})
+
+            result = await this.WBProductIdTable.findOne({where: {id:idInt}})
+            if (idInt === 277498497 ) console.log(result);
+
+        }
+        return result
+    }
+
+
+
+
 }
 
 module.exports = new ProductIdService()

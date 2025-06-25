@@ -11,6 +11,7 @@ const router = new Router()
 // Основная функция - обновление данныъ
 router.get('/test', wbController.test)         // тестовая функция для отладки
 
+router.get('/getMathData/:link', wbController.getMathData)         // тестовая функция для отладки
 // Сервисные функции
 
 router.get('/deleteZeroID', wbController.deleteZeroID)                  //  удаляем товары которых больше нет на вб для который saleCount стал null

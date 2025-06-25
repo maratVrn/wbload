@@ -262,7 +262,7 @@ function getDataFromHistory (history, endPrice, totalQuantity, daysCount = 30, i
                     if (crDate.toLocaleDateString() === d_tmp){
                         sq = history.at(arIdx).q - q
                         q = history.at(arIdx).q
-                        if (q>39000) isBigQuantity = true
+                       // if (q>39000) isBigQuantity = true
                         // Если отрицательное кол-во продаж то возможно это поступление! выясним это
                         if (sq < 0){
                             const absSQ = -1*sq

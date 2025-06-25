@@ -345,6 +345,9 @@ class ProductListService {
                                 const saleInfo = getDataFromHistory(oneProduct.priceHistory,
                                     updateProductListInfo[j].price, updateProductListInfo[j].totalQuantity, 30,isFbo, false )
 
+                                if (oneProduct.id === 2026218)  saveParserFuncLog('unomalId ', 'данные для id '+oneProduct.id +
+                                    'totalSaleQuantity = ' + saleInfo.totalSaleQuantity + ' totalMoney =  '+saleInfo.totalMoney)
+
                                 oneProduct.saleMoney = saleInfo.totalMoney
                                 oneProduct.discount = saleInfo.discount
                                 // TODO: тут обнаружены аномалии - обьем продаж может быть очень большим что говорит о левых записях в бд
@@ -781,7 +784,26 @@ class ProductListService {
     }
 
 
+    async getProductInfo(idInfo){
 
+        let result = []
+
+        if (idInfo.catalogId) {
+            const isTable = await this.checkTableName(idInfo.catalogId)
+
+            if (isTable)
+                if (idInfo.id)
+                    try {
+                        const id = parseInt(idInfo.id)
+                        const data = await this.WBCatalogProductList.findOne({where: {id:id}})
+                        if (data) result = data
+                    }
+
+                    catch (error) {console.log(error);  }
+        }
+
+        return result
+    }
 
 
 
