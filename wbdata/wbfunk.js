@@ -398,7 +398,7 @@ function getDataFromHistory (history, endPrice, totalQuantity, daysCount = 30, i
     const resultData = {
         totalSaleQuantity : totalSaleQuantity,
         totalMoney : totalMoney,
-        discount : 0, //realDiscount
+
     }
 
 
@@ -410,7 +410,7 @@ function get30DaysSaleInfoFromHistory (history, endPrice, totalQuantity){
 
     let totalSaleQuantity = 0                       // Общее кол-во продаж за период
     let totalMoney = 0                              // Общий оборот за период
-    let discount = 0                // Реальная скидка
+
     const dayCount = 30
     let crDate = new Date()
     if (history?.length >0) {
@@ -482,7 +482,6 @@ function get30DaysSaleInfoFromHistory (history, endPrice, totalQuantity){
     const resultData = {
         totalSaleQuantity : totalSaleQuantity,
         totalMoney : totalMoney,
-        discount : discount
     }
 
     return resultData

@@ -48,10 +48,8 @@ function getWBCatalogDataFromJsonReq(data){
             let jsonData = {
 
                 id: data[key].id ? data[key].id : -1,
-                maxPrice: price,
                 price: price,
                 reviewRating: data[key].reviewRating ? data[key].reviewRating : -1,
-                discount: 0,
                 brandId: data[key].brandId ? data[key].brandId : -1,
                 saleCount : 0,
                 subjectId: data[key].subjectId ? data[key].subjectId : -1,
@@ -388,26 +386,16 @@ async function PARSER_GetProductListInfo(productIdList) {
                             // Определим dtype
                             let dtype = -1
                             // TODO: Потом это убрать!! это надо сделать один раз при загрузке нового товара и забить и брать из описания
-                            for (let k in resData.sizes) {
-                                let isDType = false
-                                if (resData.sizes[k]?.dtype) dtype = resData.sizes[k].dtype
-                                if (resData.sizes[k]?.stocks)
-                                    for (let l in resData.sizes[k]?.stocks) {
-                                        if (resData.sizes[k]?.stocks[l]?.dtype) dtype = resData.sizes[k]?.stocks[l]?.dtype
-                                        if (dtype === 1) {isDType = true; break}
-                                    }
-                                if (isDType) break
-                            }
+                            if (currProduct.dtype) dtype = currProduct.dtype
+
 
                             const priceHistory_tmp = []
                             priceHistory_tmp.push({d: dt, sp: price, q:totalQuantity})
 
                             const newProduct = {
                                 id              : currProduct?.id ? currProduct.id : 0,
-                                maxPrice        : price,
                                 price           : price,
                                 reviewRating    : currProduct.reviewRating ? currProduct.reviewRating : 0,
-                                discount        : 0,
                                 kindId	        : currProduct.kindId ? currProduct.kindId : 0,
                                 subjectId       : currProduct.subjectId ? currProduct.subjectId : 0,
                                 brandId         : currProduct.brandId,
@@ -425,10 +413,8 @@ async function PARSER_GetProductListInfo(productIdList) {
 
                             const newProduct = {
                                 id              : currProduct?.id ? currProduct.id : 0,
-                                maxPrice        : 0,
                                 price           : 0,
                                 reviewRating    : currProduct.reviewRating ? currProduct.reviewRating : 0,
-                                discount        : 0,
                                 kindId	        : currProduct.kindId ? currProduct.kindId : 0,
                                 subjectId       : currProduct.subjectId ? currProduct.subjectId : 0,
                                 brandId         : currProduct.brandId,
@@ -436,6 +422,7 @@ async function PARSER_GetProductListInfo(productIdList) {
                                 saleMoney       : 0,
                                 totalQuantity   : totalQuantity,
                                 priceHistory    : priceHistory_tmp,
+                                dtype           : 0,
                             }
 
                             productListInfo.push(newProduct)
@@ -517,7 +504,6 @@ async function PARSER_GetProductListInfoToClient(productIdList) {
                         // Если остатков товара больше 0  то найдем цену
                         let price = -1
                         let basicPrice = -1
-                        let discount = 0
                         if (totalQuantity > 0) {
                             // Поиск цен. Пробегаемся по остаткам на размерах и если находим то прекращаем писк. Тут важно что если на остатках в размере 0 то и цен не будет
 
@@ -525,7 +511,7 @@ async function PARSER_GetProductListInfoToClient(productIdList) {
                                 if (currProduct.sizes[k]?.price) {
                                     price = currProduct.sizes[k]?.price?.product ? Math.round(parseInt(currProduct.sizes[k]?.price?.product) / 100) : -1
                                     basicPrice = currProduct.sizes[k]?.price?.basic ? Math.round(parseInt(currProduct.sizes[k]?.price?.basic) / 100) : -1
-                                    if (basicPrice>0) discount = Math.round( 100 * (basicPrice - price)/basicPrice )
+
                                     break
                                 }
                             }
@@ -545,9 +531,9 @@ async function PARSER_GetProductListInfoToClient(productIdList) {
                             id              : currProduct?.id ? currProduct.id : 0,
                             basicPrice      : basicPrice,
                             price           : price,
+                            dtype           : currProduct.dtype	 ? currProduct.dtype : 0,
                             totalQuantity   : totalQuantity,
                             reviewRating    : currProduct.reviewRating	 ? currProduct.reviewRating : 0,
-                            discount        : discount,
                             feedbacks	    : currProduct.feedbacks ? currProduct.feedbacks : 0,
                             brand		    : currProduct.brand	    ? currProduct.brand	 : "",
                             name		    : currProduct.name	    ? currProduct.name		 : "",

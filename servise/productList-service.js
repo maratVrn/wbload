@@ -13,10 +13,9 @@ class ProductListService {
 
     WBCatalogProductList = sequelize.define('test_ok',{
             id              :   {type: DataTypes.INTEGER, primaryKey: true},
-            maxPrice        :   {type: DataTypes.INTEGER},          // максимальная цена товара
+            dtype           :   {type: DataTypes.INTEGER},          // тип склада
             price           :   {type: DataTypes.INTEGER},          // максимальная цена товара
             reviewRating	:   {type: DataTypes.FLOAT},            // Рейтинг товара ПО Обзорам
-            discount        :   {type: DataTypes.FLOAT},            // текущая скида
             subjectId       :   {type: DataTypes.INTEGER},          // ИД Позиции в предмета
             brandId         :   {type: DataTypes.INTEGER},          // ИД Позиции в бренда
             saleCount       :   {type: DataTypes.INTEGER},          // Обьем продаж за последний месяц
@@ -111,7 +110,7 @@ class ProductListService {
                     console.log('Всего нужно обновить ' + saveArray.length);
                     console.log('нужно удалить ' + deleteIdArray.length);
                     deleteCount = deleteIdArray.length
-                    await this.WBCatalogProductList.bulkCreate(saveArray,{    updateOnDuplicate: ["maxPrice","price","reviewRating","discount","totalQuantity","saleCount","saleMoney","priceHistory"]  })
+                    await this.WBCatalogProductList.bulkCreate(saveArray,{    updateOnDuplicate: ["price","reviewRating","dtype","totalQuantity","saleCount","saleMoney","priceHistory"]  })
                     // Удаляем нерабочие ИД-ки
                     await this.WBCatalogProductList.destroy({where: {id: deleteIdArray}})
                     await ProductIdService.checkIdInCatalogID_andDestroy(deleteIdArray, parseInt(productList_tableName.replace('productList','')))
@@ -140,10 +139,9 @@ class ProductListService {
         let needNew = true
         const oneProduct = {
             id              : product.id,
-            maxPrice        : product.maxPrice,
             price           : product.price,
             reviewRating    : product.reviewRating,
-            discount        : product.discount,
+            dtype           : product.dtype,
             totalQuantity   : product.totalQuantity,
             priceHistory    : [],
             subjectId       : product.subjectId,
@@ -237,12 +235,11 @@ class ProductListService {
                     for (let j in currProductList) {
                         const one = {
                             id: currProductList[j].id,
-                            maxPrice: currProductList[j].maxPrice,
                             price: currProductList[j].price,
                             reviewRating: currProductList[j].reviewRating,
-                            discount: currProductList[j].discount,
                             subjectId: currProductList[j].subjectId,
                             brandId: currProductList[j].brandId,
+                            dtype: currProductList[j].dtype,
                             totalQuantity: currProductList[j].totalQuantity,
                             priceHistory: currProductList[j].priceHistory,
                             countHistory: currProductList[j].countHistory,
@@ -290,10 +287,9 @@ class ProductListService {
                 try {
                     const oneProduct = {
                         id              : allProductList[i]?.id ? allProductList[i].id : 0,
-                        maxPrice        : allProductList[i]?.maxPrice ? allProductList[i].maxPrice : 0,
                         price           : allProductList[i]?.price ? allProductList[i].price : 0,
+                        dtype           : allProductList[i]?.dtype ? allProductList[i].dtype : 0,
                         reviewRating    : 0,
-                        discount        : 0,
                         totalQuantity   : 0,
                         saleMoney       : 0,
                         saleCount       : 0,
@@ -338,6 +334,7 @@ class ProductListService {
                                 // console.log(oneProduct.priceHistory);
 
                                 oneProduct.totalQuantity = updateProductListInfo[j]?.totalQuantity ? updateProductListInfo[j]?.totalQuantity : 0
+                                oneProduct.dtype = updateProductListInfo[j]?.dtype>0 ? updateProductListInfo[j]?.dtype : oneProduct.dtype
                                 oneProduct.reviewRating = updateProductListInfo[j]?.reviewRating ? updateProductListInfo[j]?.reviewRating : 0
                                 oneProduct.kindId = updateProductListInfo[j]?.kindId ? updateProductListInfo[j]?.kindId : 0
 
@@ -345,11 +342,9 @@ class ProductListService {
                                 const saleInfo = getDataFromHistory(oneProduct.priceHistory,
                                     updateProductListInfo[j].price, updateProductListInfo[j].totalQuantity, 30,isFbo, false )
 
-                                if (oneProduct.id === 2026218)  saveParserFuncLog('unomalId ', 'данные для id '+oneProduct.id +
-                                    'totalSaleQuantity = ' + saleInfo.totalSaleQuantity + ' totalMoney =  '+saleInfo.totalMoney)
-
+ 
                                 oneProduct.saleMoney = saleInfo.totalMoney
-                                oneProduct.discount = saleInfo.discount
+
                                 // TODO: тут обнаружены аномалии - обьем продаж может быть очень большим что говорит о левых записях в бд
                                 // пока просто сохраним данные об этом ID и поставим saleMoney в опр число
                                 if (oneProduct.saleMoney > 1_111_111_111){
@@ -365,8 +360,6 @@ class ProductListService {
                                 if (updateProductListInfo[j]?.totalQuantity > 0) {
                                     if (updateProductListInfo[j]?.price > 0) {
                                         oneProduct.price = updateProductListInfo[j].price
-                                        if (oneProduct.maxPrice < updateProductListInfo[j]?.price)
-                                            oneProduct.maxPrice = updateProductListInfo[j]?.price
                                     }
                                 }
 
@@ -542,125 +535,6 @@ class ProductListService {
         saveParserFuncLog('listServiceInfo ', ' ********  ЗАВЕРШЕНО **************')
 
         console.log('isOk');
-
-    }
-
-    // Глобальная миграция всех таблиц productList при изменении структуры таблицы
-    async migrationALLToNewTableName(){
-
-        saveParserFuncLog('migrationToNewTable ', 'переносим данные всех таблиц  --productList_new-- в новый формат  ')
-        try {
-            let allCount = 0
-
-
-            const allTablesName = await sequelize.getQueryInterface().showAllTables()
-            if (allTablesName)
-                for (let i in allTablesName) {
-                    const tableName = allTablesName[i]
-                    if (tableName.toString().includes('productList') && tableName.toString().includes('new')) {
-                        const tableId = parseInt(tableName.replace('productList',''))
-                        console.log('таблица --- > ' + tableId);
-                        if (tableId) {
-
-
-                            await this.migrationToNewTableName(tableId)
-                            // await this.migrationToNewTableName(1)
-                            allCount+=1
-                            // if (i>10) break
-
-                        }
-                    }
-
-                }
-            saveParserFuncLog('migrationToNewTable ', 'Перенос завершен общее кол-во '+allCount)
-
-        } catch (error) {
-            saveErrorLog('productListService',`Ошибка в migrationALLToNewTableName `)
-            saveErrorLog('productListService', error)
-            console.log(error);
-        }
-
-
-        console.log('isOk');
-
-    }
-
-    // Миграция конретной таблицы productList при изменении структуры
-    async migrationToNewTableName (tableId){
-
-
-        const isTable = await this.checkTableNameNew(tableId)
-
-        if (isTable) {
-            const isTableNew = await this.checkTableName(tableId)
-            if (isTableNew) {
-                try {
-
-                    const allProductsCount = await this.WBCatalogProductList_new.count()
-                    const allProductsCountNew = await this.WBCatalogProductList.count()
-
-                    if (allProductsCountNew < 100) {
-                        saveParserFuncLog('migrationToNewTable ', ' Переносим данные в новую таблицу productList ' + tableId )
-                        saveParserFuncLog('migrationToNewTable ', ' Загрузили старые кол-во  ' + allProductsCount + '  начинаем изменение')
-
-                        await this.WBCatalogProductList.destroy({where: {}, truncate: true})
-
-                        // Делаем шаг по обработке чтобы не было дампа памяти
-                        const step = 300_000
-
-                        for (let j = 0; j <= allProductsCount-1; j++) {
-
-                            const allProducts = await this.WBCatalogProductList_new.findAll({offset: j, limit: step, order: [['id']]})
-                            const newProducts = []
-                            for (let i in allProducts) {
-
-                                if (allProducts[i].totalQuantity>process.env.MIN_TOTAL_QUANTITY) {
-                                    try {
-                                        const price = allProducts[i].priceHistory[0].sp
-
-                                        const oneProduct = {
-                                            id: allProducts[i].id,
-                                            maxPrice: price,
-                                            price    :price,
-                                            reviewRating : 0,
-                                            discount: 0,
-                                            subjectId: allProducts[i].subjectId,
-                                            brandId: allProducts[i].brandId,
-                                            totalQuantity: allProducts[i].totalQuantity,
-                                            priceHistory: allProducts[i].priceHistory,
-                                            countHistory: allProducts[i].countHistory,
-                                        }
-
-
-
-
-                                        newProducts.push(oneProduct)
-                                    } catch (error) {
-                                        console.log(error);}
-                                }
-
-                            }
-                            console.log(newProducts.length);
-                            await this.WBCatalogProductList.bulkCreate(newProducts)
-                            j += step-1
-                        }
-
-                        const allProductsCountNew2 = await this.WBCatalogProductList.count()
-                        saveParserFuncLog('migrationToNewTable ', ' Сохранили новые товары кол-во  ' + allProductsCountNew2)
-                        saveParserFuncLog('migrationToNewTable ', ' ********  ЗАВЕРШЕНО **************')
-                        await delay(0.1*60*1000)
-                    }
-                } catch (error) {
-                    saveErrorLog('productListService',`Ошибка в migrationToNewTableName tableId`+tableId)
-                    saveErrorLog('productListService', error)
-                    console.log(error);
-                }
-            }
-
-        }
-
-
-
 
     }
 
