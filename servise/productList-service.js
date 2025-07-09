@@ -315,7 +315,7 @@ class ProductListService {
                                     if ((oldHistory.q === updateProductListInfo[j]?.priceHistory[0].q) &&
                                         (oldHistory.sp === updateProductListInfo[j]?.priceHistory[0].sp)) {
 
-                                        if (oldHistory.q > 0) {
+                                        if (oldHistory.q > 0) { 
                                             oneProduct.priceHistory.pop()
                                         }
                                     }
@@ -342,7 +342,7 @@ class ProductListService {
                                 const saleInfo = getDataFromHistory(oneProduct.priceHistory,
                                     updateProductListInfo[j].price, updateProductListInfo[j].totalQuantity, 30,isFbo, false )
 
- 
+
                                 oneProduct.saleMoney = saleInfo.totalMoney
 
                                 // TODO: тут обнаружены аномалии - обьем продаж может быть очень большим что говорит о левых записях в бд
