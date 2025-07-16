@@ -24,7 +24,7 @@ class TaskService{
         })
 
     // НУЖНА ОСНОВНАЯ ЗАДАЧА !!!! ОБновляем информацию по всем товарам в базе - цену и колличество
-    async updateAllProductList (){
+    async updateAllProductList (needCalcData = false){
         const taskName = 'updateAllProductList'
         let needTask = {}
         let allUpdateCount = 0
@@ -81,7 +81,7 @@ class TaskService{
 
                 console.log(taskData[i].tableName);
 
-                const [updateResult,updateCount, deleteCount]  = await ProductListService.updateAllWBProductListInfo_fromTable2(taskData[i].tableName)
+                const [updateResult,updateCount, deleteCount]  = await ProductListService.updateAllWBProductListInfo_fromTable2(taskData[i].tableName, needCalcData)
 
 
                 taskData[i].tableTaskEnd = updateCount >0 ? true : false
@@ -92,7 +92,7 @@ class TaskService{
                 allUpdateCount += updateCount
                 allDeletedCount += deleteCount
 
-                await delay(0.015 * 60 * 1000)
+                await delay(0.005 * 60 * 1000)
             } catch(error) {
                 saveErrorLog('taskService',`Ошибка в updateAllProductList при обновлении таблицы `+taskData[i].tableName)
                 saveErrorLog('taskService', error)

@@ -17,9 +17,9 @@ const app = express()
 
 
 // Автозапуск обновления каждый новый день
-cron.schedule("0 5 0 * * *", function() {
-   TaskService.updateAllProductList().then()
-}); 
+// cron.schedule("0 5 0 * * *", function() {
+//    TaskService.updateAllProductList(true).then()
+// });
 
 app.use(express.json({limit: '10mb'}));
 app.use(cookieParser());

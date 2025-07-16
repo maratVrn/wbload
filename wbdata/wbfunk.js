@@ -217,9 +217,6 @@ function getDataFromHistory (history, endPrice, totalQuantity, daysCount = 30, i
     let addQuantityArray = []                         // Массив поступлений
     let totalSaleQuantity = 0                       // Общее кол-во продаж за период
     let totalMoney = 0                              // Общий оборот за период
-    // let minPrice = 0                                // минимальная цена
-    // let maxPrice = 0                                // максимальная цена
-    // let startQuantity = 0                           // Остатки на начало анализа
     let addSQ = 0                                   // Сколько пришло на склад если это поступление
     let crDate = new Date()
     let realDayCounter = -1
@@ -339,7 +336,7 @@ function getDataFromHistory (history, endPrice, totalQuantity, daysCount = 30, i
             let meanQ = saleData[z].q > 0 ? saleData[z].q : 1
             for (let i in saleData) {
                 saleData[i].meanQ = Math.round(10000 * (saleData[i].q - meanQ) / meanQ) / 100
-                if (saleData[i].meanQ > 399) saleArray[saleData[i].i] = 0
+                if (saleData[i].meanQ > 3990) saleArray[saleData[i].i] = 0
             }
         } catch (e) { console.log(e);}
         // console.log(saleData);

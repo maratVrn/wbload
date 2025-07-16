@@ -46,7 +46,7 @@ class ProductListService {
 
     // ПАРСННГ Глобальная задача - обновляем информацию в выюранноной таблице и там же сохраняем
     // НУЖНА!!!
-    async updateAllWBProductListInfo_fromTable2(productList_tableName){
+    async updateAllWBProductListInfo_fromTable2(productList_tableName, needCalcData){
         let updateResult = 'Старт обновления'
         let updateCount = 0
         let deleteCount = 0
@@ -61,7 +61,7 @@ class ProductListService {
                 if (endId === -1)  saveParserFuncLog('updateServiceInfo ', 'Нулевая таблица '+productList_tableName.toString())
 
                 // saveParserFuncLog('updateServiceInfo ', ' Обновляем инф-ю про товары, Всего надо обновить товаров '+(endId+1).toString())
-                const step = 300_000 //process.env.PARSER_MAX_QUANTITY_SEARCH
+                const step = 200_000 //process.env.PARSER_MAX_QUANTITY_SEARCH
 
                 for (let i = 0; i <= endId; i++) {
 
@@ -87,7 +87,7 @@ class ProductListService {
                             console.log('j = ' + j + '  --  Запросили = ' + productList.length);
 
                             const updateProductListInfo = await PARSER_GetProductListInfo(productList)
-                            const [saveResult,newSaveArray, newDeleteIdArray] = await this.update_AllProductList(currProductList,updateProductListInfo, j, end_j )
+                            const [saveResult,newSaveArray, newDeleteIdArray] = await this.update_AllProductList(currProductList,updateProductListInfo, j, end_j, needCalcData )
 
                             updateCount += updateProductListInfo.length
                             if (saveResult) saveArray = [...saveArray,...newSaveArray]
@@ -110,7 +110,10 @@ class ProductListService {
                     console.log('Всего нужно обновить ' + saveArray.length);
                     console.log('нужно удалить ' + deleteIdArray.length);
                     deleteCount = deleteIdArray.length
-                    await this.WBCatalogProductList.bulkCreate(saveArray,{    updateOnDuplicate: ["price","reviewRating","dtype","totalQuantity","saleCount","saleMoney","priceHistory"]  })
+                    if (needCalcData)  await this.WBCatalogProductList.bulkCreate(saveArray,{    updateOnDuplicate: ["price","reviewRating","dtype","totalQuantity","saleCount","saleMoney","priceHistory"]  })
+                        else await this.WBCatalogProductList.bulkCreate(saveArray,{    updateOnDuplicate: ["price","totalQuantity","priceHistory"]  })
+
+
                     // Удаляем нерабочие ИД-ки
                     await this.WBCatalogProductList.destroy({where: {id: deleteIdArray}})
                     await ProductIdService.checkIdInCatalogID_andDestroy(deleteIdArray, parseInt(productList_tableName.replace('productList','')))
@@ -275,7 +278,7 @@ class ProductListService {
 
     // Обновляем информацию в сущетсвующей таблице и сохраняем изменные  товары в базе данных
     //НУЖНА!!!
-    async update_AllProductList (allProductList,updateProductListInfo, startI, endI){
+    async update_AllProductList (allProductList,updateProductListInfo, startI, endI , needCalcData = false){
         let saveResult = false
         let newDeleteIdArray = []
         let saveArray = []
@@ -338,23 +341,27 @@ class ProductListService {
                                 oneProduct.reviewRating = updateProductListInfo[j]?.reviewRating ? updateProductListInfo[j]?.reviewRating : 0
                                 oneProduct.kindId = updateProductListInfo[j]?.kindId ? updateProductListInfo[j]?.kindId : 0
 
-                                let isFbo =  oneProduct.dtype === 4
-                                const saleInfo = getDataFromHistory(oneProduct.priceHistory,
-                                    updateProductListInfo[j].price, updateProductListInfo[j].totalQuantity, 30,isFbo, false )
+                                // Если нужно обновлять расчет за последние 30 дней (тк это занимает время делаем не постоянно)
+                                if (needCalcData) {
 
+                                    let isFbo =  oneProduct.dtype === 4
+                                    const saleInfo = getDataFromHistory(oneProduct.priceHistory,
+                                        updateProductListInfo[j].price, updateProductListInfo[j].totalQuantity, 30,isFbo, false )
+                                    oneProduct.saleMoney = saleInfo.totalMoney
+                                    oneProduct.saleCount = saleInfo.totalSaleQuantity
 
-                                oneProduct.saleMoney = saleInfo.totalMoney
-
-                                // TODO: тут обнаружены аномалии - обьем продаж может быть очень большим что говорит о левых записях в бд
-                                // пока просто сохраним данные об этом ID и поставим saleMoney в опр число
-                                if (oneProduct.saleMoney > 1_111_111_111){
-                                    oneProduct.saleMoney = 0
-                                    oneProduct.saleCount = 0
-                                    saveParserFuncLog('unomalId ', 'Аномальные данные в ID '+oneProduct.id)
+                                    // TODO: тут обнаружены аномалии - обьем продаж может быть очень большим что говорит о левых записях в бд
+                                    // пока просто сохраним данные об этом ID и поставим saleMoney в опр число
+                                    if (oneProduct.saleMoney > 1_111_111_111){
+                                        oneProduct.saleMoney = 0
+                                        oneProduct.saleCount = 0
+                                        saveParserFuncLog('unomalId ', 'Аномальные данные в ID '+oneProduct.id)
+                                    }
                                 }
 
 
-                                oneProduct.saleCount = saleInfo.totalSaleQuantity
+
+
 
 
                                 if (updateProductListInfo[j]?.totalQuantity > 0) {
