@@ -1,6 +1,6 @@
 const fs = require("fs");
 const noIdCatalogInclude = [1234, 131289, 61037, 1235]
-
+const {saveErrorLog} = require('../servise/log')
 
 
 async function saveProductLIstInfoToCVS(productList,productListInfo ){
@@ -197,6 +197,51 @@ function getIDListFromProductList(data){
     }
     return idList
 }
+
+function calcIzZeroProduct(product){
+    const maxDayInBase = 50
+    const maxZeroDays = 10  // Кол-во дней с нулевым остатком
+    const minQ = 4
+    let isZeroProduct = false
+    let needCalc = false
+    const nowDay = new Date(Date.now())
+    if (product.priceHistory[0]) {
+        // console.log(product.priceHistory[0]);
+        const s = product.priceHistory[0].d.split('.')
+        let startDate = new Date(s[2]+'-'+s[1]+'-'+s[0]);
+        const diffDays = Math.floor((nowDay - startDate) / (1000*60*60*24))
+        // console.log(diffDays);
+        if (diffDays>maxDayInBase) needCalc = true
+    }
+    if (needCalc){
+        if (product.priceHistory[0].q >minQ ) needCalc= false
+        if (product.priceHistory.at(-1).q >minQ ) needCalc= false
+    }
+    if (needCalc){
+        isZeroProduct = true
+        for (let i = 0; i<product.priceHistory.length-1; i++){
+            if (product.priceHistory[i+1].q - product.priceHistory[i].q > 5 ){
+                isZeroProduct = false
+                break
+            }
+        }
+    }
+    if (!isZeroProduct){
+        if (product.priceHistory.at(-1).q === 0){
+            const nowDay = new Date(Date.now())
+            const s = product.priceHistory.at(-1).d.split('.')
+            let startDate = new Date(s[2]+'-'+s[1]+'-'+s[0]);
+            const diffDays = Math.floor((nowDay - startDate) / (1000*60*60*24))
+            if (diffDays>maxZeroDays) isZeroProduct = true
+        }
+    }
+
+
+    // console.log(isZeroProduct);
+
+    return isZeroProduct
+}
+
 
 function getDataFromHistory (history, endPrice, totalQuantity, daysCount = 30, isFbo = false, all2025Year = false ){
     let dayCount = daysCount
@@ -611,5 +656,5 @@ function findCatalogParamByID (catalogId, catalog){
 }
 
 module.exports = {
-     getLiteWBCatalogFromData, findCatalogParamByID, get30DaysSaleInfoFromHistory, getDataFromHistory, saveProductListToCVSFromLoadData, getCatalogData, getCatalogIdArray, saveProductLIstInfoToCVS
+     getLiteWBCatalogFromData, findCatalogParamByID, get30DaysSaleInfoFromHistory, getDataFromHistory, saveProductListToCVSFromLoadData, getCatalogData, getCatalogIdArray, calcIzZeroProduct
 }

@@ -108,6 +108,87 @@ class TaskService{
 
     }
 
+    // НУЖНА  !!!! Устанавливаем флаг  needUpdate - который потом будем использовать при обновлении товаров
+    async setNoUpdateProducts (){
+        const taskName = 'deleteZeroProducts'
+        let needTask = {}
+        let allDeletedCount = 0
+
+        // Сначала разберемся с задачей - продолжать ли старую или создать новую
+        saveParserFuncLog('taskService ', '  ----------  Запускаем задачу deleteZeroProducts -------')
+        try {
+
+            const allNoEndTask = await this.AllTask.findAll({
+                where: {isEnd: false, taskName: taskName},
+                order: [['id']]
+            })
+
+            let currTask = {
+                taskName: taskName,
+                isEnd: false,
+                startDateTime: new Date().toString(),
+                taskData: [],
+                taskResult: []
+            }
+
+
+            if (allNoEndTask.length > 0) {
+                needTask = allNoEndTask[0]
+                saveParserFuncLog('taskService ', '  --- Нашли НЕ завершенную задачу с ID '+needTask.id)
+            } else {
+                const allProductListTableName = await ProductListService.getAllProductListTableName()
+                for (let i in allProductListTableName) {
+                    const oneTaskData = {
+                        tableName: allProductListTableName[i],
+                        tableTaskEnd: false,
+                        tableTaskResult: ''
+                    }
+                    currTask.taskData.push(oneTaskData)
+                }
+
+                needTask = await this.AllTask.create(currTask)
+                saveParserFuncLog('taskService ', '  --- Создали новую задачу с ID '+needTask.id)
+
+            }
+
+        } catch (error) { saveErrorLog('taskService',`Ошибка в deleteZeroProducts при определении задачи новая или продолжаем `)
+            saveErrorLog('taskService', error)}
+
+        // Далее запустим процедуру  обновления по списку задач
+        let taskData = [...needTask.taskData]
+        let allTableIsUpdate = true
+        for (let i in taskData){
+
+            if (!taskData[i].tableTaskEnd) try {
+                console.log(taskData[i].tableName);
+
+                const [allCount, deleteCount]  = await ProductListService.setNoUpdateProducts(taskData[i].tableName)
+
+                // TODO: Отладка
+                taskData[i].tableTaskEnd =  true
+                taskData[i].tableTaskResult = deleteCount
+                await this.AllTask.update({taskData: taskData,}, {where: {id: needTask.id,},})
+
+                saveParserFuncLog('taskService ', '--- Удалили из таблицы  '+taskData[i].tableName+' Всего товаров =  '+ allCount+'  удалили  '+deleteCount)
+                allDeletedCount += deleteCount
+
+                // await delay(0.0005 * 60 * 1000)
+
+            } catch(error) {
+                saveErrorLog('taskService',`Ошибка в deleteZeroProducts при обновлении таблицы `+taskData[i].tableName)
+                saveErrorLog('taskService', error)
+            }
+            // break // TODO: Отладка
+        }
+        // if (allTableIsUpdate) await this.AllTask.update({isEnd: true}, {where: {id: needTask.id},})
+
+        console.log('updateAllProductList isOk');
+        saveParserFuncLog('taskService ', ' ********  ЗАВЕРШЕНО **************')
+
+        saveParserFuncLog('taskService ', ' ВСЕГО УДАЛИЛИ  '+allDeletedCount)
+
+    }
+
     // НУЖНА !!! Сворчиваем данные тк есть много дублирующих записей
     async checkAllProductListData (){
         const taskName = 'checkAllProductListData'
