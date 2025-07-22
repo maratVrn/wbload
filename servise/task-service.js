@@ -24,7 +24,7 @@ class TaskService{
         })
 
     // НУЖНА ОСНОВНАЯ ЗАДАЧА !!!! ОБновляем информацию по всем товарам в базе - цену и колличество
-    async updateAllProductList (needCalcData = false){
+    async updateAllProductList (needCalcData = false, updateAll = true){
         const taskName = 'updateAllProductList'
         let needTask = {}
         let allUpdateCount = 0
@@ -74,21 +74,17 @@ class TaskService{
         let taskData = [...needTask.taskData]
         let allTableIsUpdate = true
         for (let i in taskData){
-
+            // if (parseInt(i)>1700)
             if (!taskData[i].tableTaskEnd) try {
-             // if (i >= 2050) try {
-            // if (taskData[i].tableTaskEnd) try {  // Отладка
-
                 console.log(taskData[i].tableName);
+                const [updateResult,updateCount, deleteCount]  = await ProductListService.updateAllWBProductListInfo_fromTable2(taskData[i].tableName, needCalcData, updateAll)
+                // break
 
-                const [updateResult,updateCount, deleteCount]  = await ProductListService.updateAllWBProductListInfo_fromTable2(taskData[i].tableName, needCalcData)
-
-
-                taskData[i].tableTaskEnd = updateCount >0 ? true : false
+                taskData[i].tableTaskEnd = true
                 taskData[i].tableTaskResult = updateResult
                 await this.AllTask.update({taskData: taskData,}, {where: {id: needTask.id,},})
 
-                saveParserFuncLog('taskService ', '--- Обновляем таблицу  '+taskData[i].tableName+'  кол-во  '+updateCount+' удалили '+deleteCount)
+                saveParserFuncLog('taskService ', '--- Обновляем таблицу  № '+parseInt(i)+' из (' + taskData.length+') '+taskData[i].tableName+'  кол-во  '+updateCount+' удалили '+deleteCount)
                 allUpdateCount += updateCount
                 allDeletedCount += deleteCount
 
@@ -115,7 +111,7 @@ class TaskService{
         let allDeletedCount = 0
 
         // Сначала разберемся с задачей - продолжать ли старую или создать новую
-        saveParserFuncLog('taskService ', '  ----------  Запускаем задачу deleteZeroProducts -------')
+        saveParserFuncLog('taskService ', '  ----------  Запускаем задачу setNoUpdateProducts -------')
         try {
 
             const allNoEndTask = await this.AllTask.findAll({
@@ -151,7 +147,7 @@ class TaskService{
 
             }
 
-        } catch (error) { saveErrorLog('taskService',`Ошибка в deleteZeroProducts при определении задачи новая или продолжаем `)
+        } catch (error) { saveErrorLog('taskService',`Ошибка в setNoUpdateProducts при определении задачи новая или продолжаем `)
             saveErrorLog('taskService', error)}
 
         // Далее запустим процедуру  обновления по списку задач
@@ -169,13 +165,13 @@ class TaskService{
                 taskData[i].tableTaskResult = deleteCount
                 await this.AllTask.update({taskData: taskData,}, {where: {id: needTask.id,},})
 
-                saveParserFuncLog('taskService ', '--- Удалили из таблицы  '+taskData[i].tableName+' Всего товаров =  '+ allCount+'  удалили  '+deleteCount)
+                saveParserFuncLog('taskService ', '--- Удалили из таблицы № '+parseInt(i)+'   '+taskData[i].tableName+' Всего товаров =  '+ allCount+'  удалили  '+deleteCount)
                 allDeletedCount += deleteCount
 
                 // await delay(0.0005 * 60 * 1000)
 
             } catch(error) {
-                saveErrorLog('taskService',`Ошибка в deleteZeroProducts при обновлении таблицы `+taskData[i].tableName)
+                saveErrorLog('taskService',`Ошибка в setNoUpdateProducts при обновлении таблицы `+taskData[i].tableName)
                 saveErrorLog('taskService', error)
             }
             // break // TODO: Отладка
@@ -185,7 +181,7 @@ class TaskService{
         console.log('updateAllProductList isOk');
         saveParserFuncLog('taskService ', ' ********  ЗАВЕРШЕНО **************')
 
-        saveParserFuncLog('taskService ', ' ВСЕГО УДАЛИЛИ  '+allDeletedCount)
+        saveParserFuncLog('taskService ', ' ВСЕГО товаров БЕЗ обновления  '+allDeletedCount)
 
     }
 

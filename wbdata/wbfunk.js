@@ -381,7 +381,7 @@ function getDataFromHistory (history, endPrice, totalQuantity, daysCount = 30, i
             let meanQ = saleData[z].q > 0 ? saleData[z].q : 1
             for (let i in saleData) {
                 saleData[i].meanQ = Math.round(10000 * (saleData[i].q - meanQ) / meanQ) / 100
-                if (saleData[i].meanQ > 3990) saleArray[saleData[i].i] = 0
+                if (saleData[i].meanQ > 1890) saleArray[saleData[i].i] = 0
             }
         } catch (e) { console.log(e);}
         // console.log(saleData);

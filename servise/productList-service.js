@@ -47,7 +47,7 @@ class ProductListService {
 
     // ПАРСННГ Глобальная задача - обновляем информацию в выюранноной таблице и там же сохраняем
     // НУЖНА!!!
-    async updateAllWBProductListInfo_fromTable2(productList_tableName, needCalcData){
+    async updateAllWBProductListInfo_fromTable2(productList_tableName, needCalcData, updateAll = true){
         let updateResult = 'Старт обновления'
         let updateCount = 0
         let deleteCount = 0
@@ -57,25 +57,25 @@ class ProductListService {
 
             // Второй вариант - Пагинация внутри запросов
             if (productList_tableName) {
+
                 this.WBCatalogProductList.tableName = productList_tableName.toString()
                 const endId = await this.WBCatalogProductList.count()-1
                 if (endId === -1)  saveParserFuncLog('updateServiceInfo ', 'Нулевая таблица '+productList_tableName.toString())
 
-                // saveParserFuncLog('updateServiceInfo ', ' Обновляем инф-ю про товары, Всего надо обновить товаров '+(endId+1).toString())
                 const step = 200_000 //process.env.PARSER_MAX_QUANTITY_SEARCH
 
                 for (let i = 0; i <= endId; i++) {
 
-                    const currProductList = await this.WBCatalogProductList.findAll({ offset: i, limit: step, order: [['id'] ] }) // поиграть с attributes: ['id', 'logo_version', 'logo_content_type', 'name', 'updated_at']
-                    console.log(currProductList.length+'  '+currProductList[0].id+'  '+currProductList[currProductList.length-1].id);
+                    const currProductList = updateAll?
+                        await this.WBCatalogProductList.findAll({offset: i, limit: step, order: [['id'] ] })
+                        : await this.WBCatalogProductList.findAll({ where: { needUpdate:{  [Op.or]: [true, null]}}, offset: i, limit: step, order: [['id'] ] })
+
+                    console.log(' загрузили элементов  ' + currProductList.length);
+                   // break
                     let saveArray = []          // массив с обновленными данными
                     let deleteIdArray = []      // массив с удаленными товарами
-
-
                     const step2 = 500
-
                     for (let j = 0; j < currProductList.length; j ++) {
-                    // for (let j = 27921; j < 27922; j ++) {
                         try {
 
                             let end_j = j + step2 - 1 < currProductList.length ? j + step2 - 1 : currProductList.length - 1
@@ -110,6 +110,7 @@ class ProductListService {
 
                     console.log('Всего нужно обновить ' + saveArray.length);
                     console.log('нужно удалить ' + deleteIdArray.length);
+
                     deleteCount = deleteIdArray.length
                     if (needCalcData)  await this.WBCatalogProductList.bulkCreate(saveArray,{    updateOnDuplicate: ["price","reviewRating","dtype","totalQuantity","saleCount","saleMoney","priceHistory"]  })
                         else await this.WBCatalogProductList.bulkCreate(saveArray,{    updateOnDuplicate: ["price","totalQuantity","priceHistory"]  })
@@ -482,6 +483,7 @@ class ProductListService {
         try {
 
             const allTablesName = await sequelize.getQueryInterface().showAllTables()
+            allProductListTableName.push('productList10000') //TODO: разобраться почему не попадают
             if (allTablesName)
                 for (let i in allTablesName) {
                     const tableName = allTablesName[i]

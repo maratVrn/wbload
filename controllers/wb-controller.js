@@ -124,9 +124,9 @@ class WbController{
 
         try {
 
-             // const testResult  = await TaskService.updateAllProductList(false)
+             // const testResult  = await TaskService.updateAllProductList(false, false)
             const testResult  = await TaskService.setNoUpdateProducts()
-
+            //
             // const testResult  = await TaskService.checkAllProductListData()
             // const testResult  = await ProductListService.deleteAllProductListTable()
             // const testResult  = await ProductListService.updateAllWBProductListInfo_fromTable2('productList131533')
