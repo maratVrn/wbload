@@ -106,7 +106,7 @@ class TaskService{
 
     // НУЖНА  !!!! Устанавливаем флаг  needUpdate - который потом будем использовать при обновлении товаров
     async setNoUpdateProducts (){
-        const taskName = 'deleteZeroProducts'
+        const taskName = 'setNoUpdateProducts'
         let needTask = {}
         let allDeletedCount = 0
 

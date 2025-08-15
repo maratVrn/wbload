@@ -18,7 +18,7 @@ const app = express()
 
 // Автозапуск обновления каждый новый день
 cron.schedule("0 5 0 * * *", function() {
-   TaskService.updateAllProductList(false, false).then()
+   TaskService.updateAllProductList(false, true).then()
 });
 
 app.use(express.json({limit: '10mb'}));
